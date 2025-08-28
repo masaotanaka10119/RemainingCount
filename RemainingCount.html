@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>給食配缶計算ツール</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 20px;">
+
+    <h1 style="text-align: center; color: #333;">給食配缶計算ツール</h1>
+
+    <p style="text-align: center; color: #666;">データを入力してください。自動計算と保存ができます。</p>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button id="saveButton" style="padding: 10px 20px; font-size: 16px; margin-right: 10px;">データを保存</button>
+        <button id="loadButton" style="padding: 10px 20px; font-size: 16px;">データを読み込み</button>
+    </div>
+
+    <table id="dataTable" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <thead>
+            <tr style="background-color: #e9ecef;">
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">鉄板番号</th>
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">個数</th>
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">配缶順クラス名</th>
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">人数</th>
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">到達鉄板数</th>
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">鉄板上残数</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tableBody = document.querySelector('#dataTable tbody');
+            const saveButton = document.getElementById('saveButton');
+            const loadButton = document.getElementById('loadButton');
+
+            const columnTypes = ['readonly', 'number', 'text', 'number', 'readonly', 'readonly'];
+            const placeholders = ['', '個数を入力', 'クラス名を入力', '人数を入力', '', ''];
+
+            function createTableRows() {
+                for (let i = 0; i < 200; i++) {
+                    const row = document.createElement('tr');
+                    for (let j = 0; j < 6; j++) {
+                        const cell = document.createElement('td');
+                        cell.style.cssText = "border: 1px solid #dee2e6; padding: 8px;";
+
+                        if (columnTypes[j] === 'readonly') {
+                            if (j === 0) {
+                                cell.textContent = i + 1;
+                            } else {
+                                cell.textContent = '';
+                            }
+                            cell.style.backgroundColor = '#f8f9fa';
+                            cell.style.textAlign = 'center';
+                        } else {
+                            const input = document.createElement('input');
+                            input.type = columnTypes[j];
+                            input.placeholder = placeholders[j];
+                            input.style.cssText = "width: 100%; box-sizing: border-box; border: none; outline: none; background-color: transparent;";
+                            input.oninput = updateTable;
+                            cell.appendChild(input);
+                        }
+                        row.appendChild(cell);
+                    }
+                    tableBody.appendChild(row);
+                }
+            }
+
+            function updateTable() {
+                const rows = Array.from(tableBody.querySelectorAll('tr'));
+                
+                rows.forEach(row => {
+                    row.querySelectorAll('td')[4].textContent = '';
+                    row.querySelectorAll('td')[5].textContent = '';
+                });
+
+                let totalPeopleToDistribute = 0;
+                let currentTrayIndex = 0;
+
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    const peopleInput = row.querySelector('input[placeholder="人数を入力"]');
+                    const people = parseFloat(peopleInput.value) || 0;
+
+                    if (people > 0) {
+                        totalPeopleToDistribute += people;
+                        
+                        while (totalPeopleToDistribute > 0 && currentTrayIndex < rows.length) {
+                            const currentTrayItemsInput = rows[currentTrayIndex].querySelector('input[placeholder="個数を入力"]');
+                            const currentTrayItems = parseFloat(currentTrayItemsInput.value) || 0;
+                            
+                            totalPeopleToDistribute -= currentTrayItems;
+                            currentTrayIndex++;
+                        }
+                        
+                        if (totalPeopleToDistribute <= 0) {
+                            row.querySelectorAll('td')[4].textContent = currentTrayIndex;
+                            row.querySelectorAll('td')[5].textContent = Math.abs(totalPeopleToDistribute);
+                        }
+                    }
+                }
+            }
+            
+            function saveData() {
+                const data = [];
+                const rows = tableBody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const rowData = [];
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach(cell => {
+                        const input = cell.querySelector('input');
+                        if (input) {
+                            rowData.push(input.value);
+                        } else {
+                            rowData.push(cell.textContent);
+                        }
+                    });
+                    data.push(rowData);
+                });
+                localStorage.setItem('dataTableData', JSON.stringify(data));
+                alert('データを保存しました！');
+            }
+
+            function loadData() {
+                const storedData = localStorage.getItem('dataTableData');
+                if (storedData) {
+                    const data = JSON.parse(storedData);
+                    const rows = tableBody.querySelectorAll('tr');
+                    data.forEach((rowData, rowIndex) => {
+                        if (rows[rowIndex]) {
+                            const cells = rows[rowIndex].querySelectorAll('td');
+                            rowData.forEach((cellData, colIndex) => {
+                                if (cells[colIndex]) {
+                                    const input = cells[colIndex].querySelector('input');
+                                    if (input) {
+                                        input.value = cellData;
+                                    } else {
+                                        cells[colIndex].textContent = cellData;
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    updateTable();
+                    alert('データを読み込みました！');
+                } else {
+                    alert('保存されたデータはありません。');
+                }
+            }
+            
+            createTableRows();
+            saveButton.addEventListener('click', saveData);
+            loadButton.addEventListener('click', loadData);
+        });
+    </script>
+</body>
+</html>
