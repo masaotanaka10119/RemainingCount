@@ -3,6 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>給食配缶計算ツール</title>
+    <style>
+        /* CSSセクション：印刷時の表示を最適化するスタイルを定義 */
+        /* @media printは、印刷時のみ適用されるCSSルールです。*/
+        @media print {
+            /* ボタンを印刷時に非表示にします。 */
+            button {
+                display: none;
+            }
+            /* 入力フィールドの枠線や背景を消し、紙に印刷したときに見やすくします。*/
+            input {
+                border: none;
+                background-color: transparent;
+            }
+        }
+    </style>
 </head>
 <body style="font-family: Arial, sans-serif; margin: 20px;">
 
@@ -13,6 +28,19 @@
     <div style="text-align: center; margin-bottom: 20px;">
         <button id="saveButton" style="padding: 10px 20px; font-size: 16px; margin-right: 10px;">データを保存</button>
         <button id="loadButton" style="padding: 10px 20px; font-size: 16px;">データを読み込み</button>
+        <button id="printButton" style="padding: 10px 20px; font-size: 16px;">結果を印刷</button>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button id="copyCountButton" style="padding: 10px 20px; font-size: 16px;">個数をコピー</button>
+        <button id="pasteCountButton" style="padding: 10px 20px; font-size: 16px;">個数を貼り付け</button>
+        <button id="clearCountButton" style="padding: 10px 20px; font-size: 16px; margin-right: 20px;">個数をクリア</button>
+        <button id="copyClassButton" style="padding: 10px 20px; font-size: 16px;">クラス名をコピー</button>
+        <button id="pasteClassButton" style="padding: 10px 20px; font-size: 16px;">クラス名を貼り付け</button>
+        <button id="clearClassButton" style="padding: 10px 20px; font-size: 16px; margin-right: 20px;">クラス名をクリア</button>
+        <button id="copyPeopleButton" style="padding: 10px 20px; font-size: 16px;">人数をコピー</button>
+        <button id="pastePeopleButton" style="padding: 10px 20px; font-size: 16px;">人数を貼り付け</button>
+        <button id="clearPeopleButton" style="padding: 10px 20px; font-size: 16px;">人数をクリア</button>
     </div>
 
     <table id="dataTable" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
@@ -27,18 +55,24 @@
             </tr>
         </thead>
         <tbody>
-            </tbody>
+        </tbody>
     </table>
 
     <script>
+        // DOMContentLoadedイベントで、HTMLの読み込みが完了した後にスクリプトを実行します。
         document.addEventListener('DOMContentLoaded', () => {
+            // HTML要素をJavaScript変数に代入して、コードを読みやすくします。
             const tableBody = document.querySelector('#dataTable tbody');
             const saveButton = document.getElementById('saveButton');
             const loadButton = document.getElementById('loadButton');
+            const printButton = document.getElementById('printButton');
 
+            // テーブルの列の型（読み取り専用、入力可能など）を定義します。
             const columnTypes = ['readonly', 'number', 'text', 'number', 'readonly', 'readonly'];
+            // 入力フィールドのプレースホルダー（入力例）を定義します。
             const placeholders = ['', '個数を入力', 'クラス名を入力', '人数を入力', '', ''];
 
+            // テーブルの行を動的に生成する関数です。
             function createTableRows() {
                 for (let i = 0; i < 200; i++) {
                     const row = document.createElement('tr');
@@ -46,19 +80,22 @@
                         const cell = document.createElement('td');
                         cell.style.cssText = "border: 1px solid #dee2e6; padding: 8px;";
 
+                        // 列の型に応じてセルの中身を決定します。
                         if (columnTypes[j] === 'readonly') {
                             if (j === 0) {
-                                cell.textContent = i + 1;
+                                cell.textContent = i + 1; // 1列目（鉄板番号）は連番を設定します。
                             } else {
                                 cell.textContent = '';
                             }
                             cell.style.backgroundColor = '#f8f9fa';
                             cell.style.textAlign = 'center';
                         } else {
+                            // 入力可能な列には <input> 要素を作成します。
                             const input = document.createElement('input');
                             input.type = columnTypes[j];
                             input.placeholder = placeholders[j];
                             input.style.cssText = "width: 100%; box-sizing: border-box; border: none; outline: none; background-color: transparent;";
+                            // 入力内容が変わるたびに updateTable 関数を呼び出します。
                             input.oninput = updateTable;
                             cell.appendChild(input);
                         }
@@ -68,33 +105,38 @@
                 }
             }
 
+            // テーブルの自動計算を更新する関数です。
             function updateTable() {
                 const rows = Array.from(tableBody.querySelectorAll('tr'));
-                
+
+                // 計算結果のセルを初期化します。
                 rows.forEach(row => {
                     row.querySelectorAll('td')[4].textContent = '';
                     row.querySelectorAll('td')[5].textContent = '';
                 });
 
-                let totalPeopleToDistribute = 0;
-                let currentTrayIndex = 0;
+                let totalPeopleToDistribute = 0; // 配缶が必要な合計人数
+                let currentTrayIndex = 0; // 現在処理中の鉄板番号のインデックス
 
+                // 各行（クラス）をループして計算します。
                 for (let i = 0; i < rows.length; i++) {
                     const row = rows[i];
                     const peopleInput = row.querySelector('input[placeholder="人数を入力"]');
                     const people = parseFloat(peopleInput.value) || 0;
 
                     if (people > 0) {
-                        totalPeopleToDistribute += people;
-                        
+                        totalPeopleToDistribute += people; // 現在のクラスの人数を合計に追加します。
+
+                        // 合計人数が0以下になるまで鉄板を消費します。
                         while (totalPeopleToDistribute > 0 && currentTrayIndex < rows.length) {
                             const currentTrayItemsInput = rows[currentTrayIndex].querySelector('input[placeholder="個数を入力"]');
                             const currentTrayItems = parseFloat(currentTrayItemsInput.value) || 0;
-                            
+
                             totalPeopleToDistribute -= currentTrayItems;
                             currentTrayIndex++;
                         }
-                        
+
+                        // 合計人数が0以下になったら、計算結果をセルに表示します。
                         if (totalPeopleToDistribute <= 0) {
                             row.querySelectorAll('td')[4].textContent = currentTrayIndex;
                             row.querySelectorAll('td')[5].textContent = Math.abs(totalPeopleToDistribute);
@@ -102,7 +144,8 @@
                     }
                 }
             }
-            
+
+            // データをローカルストレージに保存する関数です。
             function saveData() {
                 const data = [];
                 const rows = tableBody.querySelectorAll('tr');
@@ -112,9 +155,9 @@
                     cells.forEach(cell => {
                         const input = cell.querySelector('input');
                         if (input) {
-                            rowData.push(input.value);
+                            rowData.push(input.value); // 入力フィールドの値を保存します。
                         } else {
-                            rowData.push(cell.textContent);
+                            rowData.push(cell.textContent); // 読み取り専用セルの値を保存します。
                         }
                     });
                     data.push(rowData);
@@ -123,6 +166,7 @@
                 alert('データを保存しました！');
             }
 
+            // ローカルストレージからデータを読み込む関数です。
             function loadData() {
                 const storedData = localStorage.getItem('dataTableData');
                 if (storedData) {
@@ -135,24 +179,104 @@
                                 if (cells[colIndex]) {
                                     const input = cells[colIndex].querySelector('input');
                                     if (input) {
-                                        input.value = cellData;
+                                        input.value = cellData; // 入力フィールドに値を設定します。
                                     } else {
-                                        cells[colIndex].textContent = cellData;
+                                        cells[colIndex].textContent = cellData; // 読み取り専用セルに値を設定します。
                                     }
                                 }
                             });
                         }
                     });
-                    updateTable();
+                    updateTable(); // 読み込み後に自動計算を更新します。
                     alert('データを読み込みました！');
                 } else {
                     alert('保存されたデータはありません。');
                 }
             }
-            
+
+            //--- 列操作用の共通関数 ---
+            // 指定した列のデータを一括で操作する汎用的な関数です。
+            // placeholder: 操作対象の列を特定するためのプレースホルダー文字列
+            // operation: 実行する操作 ('copy', 'paste', 'clear')
+            function operateColumn(placeholder, operation) {
+                const rows = tableBody.querySelectorAll('tr');
+                const data = [];
+
+                // コピーとクリアのために、まず列のデータを配列に収集します。
+                rows.forEach(row => {
+                    const input = row.querySelector(`input[placeholder="${placeholder}"]`);
+                    if (input) {
+                        data.push(input.value);
+                    }
+                });
+
+                // 操作の実行（コピー、クリア、貼り付け）
+                if (operation === 'copy') {
+                    // クリップボードにデータをコピーします。
+                    navigator.clipboard.writeText(data.join('\n'))
+                        .then(() => alert(`${placeholder}データをクリップボードにコピーしました！`))
+                        .catch(err => {
+                            // クリップボードへのアクセスが拒否された場合にユーザーに通知します。
+                            console.error('クリップボードへの書き込みに失敗しました:', err);
+                            alert('クリップボードへのアクセスが許可されていません。ブラウザの設定を確認してください。');
+                        });
+                } else if (operation === 'clear') {
+                    // 列のすべての入力フィールドを空にします。
+                    rows.forEach(row => {
+                        const input = row.querySelector(`input[placeholder="${placeholder}"]`);
+                        if (input) {
+                            input.value = '';
+                        }
+                    });
+                    updateTable(); // クリア後に自動計算を更新します。
+                } else if (operation === 'paste') {
+                    // クリップボードからデータを読み込み、テーブルに貼り付けます。
+                    navigator.clipboard.readText()
+                        .then(text => {
+                            const lines = text.split('\n'); // データを改行で分割して配列にします。
+                            rows.forEach((row, index) => {
+                                // 貼り付け先の行が存在し、クリップボードのデータが存在する場合に実行します。
+                                // これにより、テーブルの行数を超えたデータは無視されます。
+                                if (rows[index] && lines[index]) {
+                                    const input = row.querySelector(`input[placeholder="${placeholder}"]`);
+                                    if (input) {
+                                        input.value = lines[index].trim();
+                                    }
+                                }
+                            });
+                            updateTable(); // 貼り付け後に自動計算を更新します。
+                            alert(`${placeholder}データを貼り付けました！`);
+                        })
+                        .catch(err => {
+                            // クリップボードからの読み込みが拒否された場合にユーザーに通知します。
+                            console.error('クリップボードからの読み込みに失敗しました:', err);
+                            alert('クリップボードからの読み込みが許可されていません。ブラウザの設定を確認してください。');
+                        });
+                }
+            }
+
+            //--- イベントリスナーの設定 ---
+            // 各ボタンにクリックイベントを設定します。
             createTableRows();
             saveButton.addEventListener('click', saveData);
             loadButton.addEventListener('click', loadData);
+            printButton.addEventListener('click', () => window.print()); // 印刷ボタンのクリックでブラウザの印刷ダイアログを開きます。
+
+            // 個数ボタン
+            document.getElementById('copyCountButton').addEventListener('click', () => operateColumn('個数を入力', 'copy'));
+            document.getElementById('pasteCountButton').addEventListener('click', () => operateColumn('個数を入力', 'paste'));
+            document.getElementById('clearCountButton').addEventListener('click', () => operateColumn('個数を入力', 'clear'));
+
+            // クラス名ボタン
+            document.getElementById('copyClassButton').addEventListener('click', () => operateColumn('クラス名を入力', 'copy'));
+            document.getElementById('pasteClassButton').addEventListener('click', () => operateColumn('クラス名を入力', 'paste'));
+            document.getElementById('clearClassButton').addEventListener('click', () => operateColumn('クラス名を入力', 'clear'));
+
+            // 人数ボタン
+            document.getElementById('copyPeopleButton').addEventListener('click', () => operateColumn('人数を入力', 'copy'));
+            document.getElementById('pastePeopleButton').addEventListener('click', () => operateColumn('人数を入力', 'paste'));
+            document.getElementById('clearPeopleButton').addEventListener('click', () => operateColumn('人数を入力', 'clear'));
+
         });
     </script>
 </body>
