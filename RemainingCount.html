@@ -17,6 +17,28 @@
                 background-color: transparent;
             }
         }
+
+        /* 追加：見出し内ボタン用のスタイル */
+        .col-btn {
+            font-size: 10px;
+            padding: 2px 4px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            border-radius: 3px;
+            margin: 1px 0;
+        }
+        .col-btn:hover {
+            background-color: #f0f0f0;
+        }
+        
+        /* 追加：ボタンを縦に並べるためのコンテナ */
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body style="font-family: Arial, sans-serif; margin: 20px;">
@@ -31,27 +53,36 @@
         <button id="printButton" style="padding: 10px 20px; font-size: 16px;">結果を印刷</button>
     </div>
 
-    <div style="text-align: center; margin-bottom: 20px;">
-        <button id="copyCountButton" style="padding: 10px 20px; font-size: 16px;">個数をコピー</button>
-        <button id="pasteCountButton" style="padding: 10px 20px; font-size: 16px;">個数を貼り付け</button>
-        <button id="clearCountButton" style="padding: 10px 20px; font-size: 16px; margin-right: 20px;">個数をクリア</button>
-        <button id="copyClassButton" style="padding: 10px 20px; font-size: 16px;">クラス名をコピー</button>
-        <button id="pasteClassButton" style="padding: 10px 20px; font-size: 16px;">クラス名を貼り付け</button>
-        <button id="clearClassButton" style="padding: 10px 20px; font-size: 16px; margin-right: 20px;">クラス名をクリア</button>
-        <button id="copyPeopleButton" style="padding: 10px 20px; font-size: 16px;">人数をコピー</button>
-        <button id="pastePeopleButton" style="padding: 10px 20px; font-size: 16px;">人数を貼り付け</button>
-        <button id="clearPeopleButton" style="padding: 10px 20px; font-size: 16px;">人数をクリア</button>
-    </div>
-
     <table id="dataTable" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
         <thead>
             <tr style="background-color: #e9ecef;">
-                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">鉄板番号</th>
-                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">個数</th>
-                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">配缶順クラス名</th>
-                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">人数</th>
-                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">到達鉄板数</th>
-                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">鉄板上残数</th>
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">鉄板番号</th>
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">
+                    個数
+                    <div class="btn-container">
+                        <button id="copyCountButton" class="col-btn">コピー</button>
+                        <button id="pasteCountButton" class="col-btn">貼り付け</button>
+                        <button id="clearCountButton" class="col-btn">クリア</button>
+                    </div>
+                </th>
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">
+                    配缶順クラス名
+                    <div class="btn-container">
+                        <button id="copyClassButton" class="col-btn">コピー</button>
+                        <button id="pasteClassButton" class="col-btn">貼り付け</button>
+                        <button id="clearClassButton" class="col-btn">クリア</button>
+                    </div>
+                </th>
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">
+                    人数
+                    <div class="btn-container">
+                        <button id="copyPeopleButton" class="col-btn">コピー</button>
+                        <button id="pastePeopleButton" class="col-btn">貼り付け</button>
+                        <button id="clearPeopleButton" class="col-btn">クリア</button>
+                    </div>
+                </th>
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">到達鉄板数</th>
+                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">鉄板上残数</th>
             </tr>
         </thead>
         <tbody>
@@ -237,7 +268,7 @@
                             rows.forEach((row, index) => {
                                 // 貼り付け先の行が存在し、クリップボードのデータが存在する場合に実行します。
                                 // これにより、テーブルの行数を超えたデータは無視されます。
-                                if (rows[index] && lines[index]) {
+                                if (rows[index] && lines[index] !== undefined) {
                                     const input = row.querySelector(`input[placeholder="${placeholder}"]`);
                                     if (input) {
                                         input.value = lines[index].trim();
